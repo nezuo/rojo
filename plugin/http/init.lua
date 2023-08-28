@@ -29,6 +29,8 @@ local function performRequest(requestParams)
 				return HttpService:RequestAsync(requestParams)
 			end)
 
+			print(response)
+
 			if success then
 				Log.trace("Request {} success, status code {}", requestId, response.StatusCode)
 				resolve(HttpResponse.fromRobloxResponse(response))

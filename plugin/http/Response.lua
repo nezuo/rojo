@@ -1,5 +1,7 @@
 local HttpService = game:GetService("HttpService")
 
+local msgpack = require(script.Parent.Parent.msgpack)
+
 local stringTemplate = [[
 Http.Response {
 	code: %d
@@ -28,7 +30,23 @@ function Response:isSuccess()
 end
 
 function Response:json()
-	return HttpService:JSONDecode(self.body)
+	local startedAt = os.clock()
+
+	local value = HttpService:JSONDecode(self.body)
+
+	print("JSON took:", os.clock() - startedAt)
+
+	return value
+end
+
+function Response:msgpack()
+	local startedAt = os.clock()
+
+	local value = msgpack.decode(self.body)
+
+	print("msgpack took:", os.clock() - startedAt)
+
+	return value
 end
 
 return Response

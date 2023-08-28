@@ -159,7 +159,7 @@ impl TestServeSession {
     ) -> Result<SubscribeResponse<'static>, reqwest::Error> {
         let url = format!("http://localhost:{}/api/subscribe/{}", self.port, cursor);
 
-        reqwest::blocking::get(&url)?.json()
+        reqwest::blocking::get(&url)?.bytes()
     }
 }
 

@@ -3,8 +3,10 @@
 
 use std::{collections::HashMap, fs, path::PathBuf, str::FromStr, sync::Arc};
 
-use hyper::{body, Body, Method, Request, Response, StatusCode};
+use hyper::{body, header::CONTENT_TYPE, Body, Method, Request, Response, StatusCode};
 use rbx_dom_weak::types::Ref;
+use serde::Serialize;
+use uuid::Uuid;
 
 use crate::{
     serve_session::ServeSession,
@@ -17,6 +19,7 @@ use crate::{
         },
         util::{json, json_ok},
     },
+    SessionId,
 };
 
 pub async fn call(serve_session: Arc<ServeSession>, request: Request<Body>) -> Response<Body> {
@@ -72,6 +75,8 @@ impl ApiService {
     /// Retrieve any messages past the given cursor index, and if
     /// there weren't any, subscribe to receive any new messages.
     async fn handle_api_subscribe(&self, request: Request<Body>) -> Response<Body> {
+        println!("{request:#?}");
+
         let argument = &request.uri().path()["/api/subscribe/".len()..];
         let input_cursor: u32 = match argument.parse() {
             Ok(v) => v,
@@ -97,16 +102,32 @@ impl ApiService {
             Ok((message_cursor, messages)) => {
                 let tree = tree_handle.lock().unwrap();
 
-                let api_messages = messages
+                let api_messages: Vec<SubscribeMessage> = messages
                     .into_iter()
                     .map(|patch| SubscribeMessage::from_patch_update(&tree, patch))
                     .collect();
 
-                json_ok(SubscribeResponse {
+                let a = serde_json::to_string(&Uuid::new_v4()).unwrap();
+
+                println!("{a}");
+
+                let subscripe_response = SubscribeResponse {
                     session_id,
                     message_cursor,
                     messages: api_messages,
-                })
+                };
+
+                let serialized = rmp_serde::to_vec_named(&subscripe_response).unwrap();
+
+                println!("{serialized:?}");
+
+                Response::builder()
+                    .status(StatusCode::OK)
+                    .header(CONTENT_TYPE, "application/msgpack")
+                    .body(Body::from(serialized))
+                    .unwrap()
+
+                // json_ok(subscripe_response)
             }
             Err(_) => json(
                 ErrorResponse::internal_error("Message queue disconnected sender"),
@@ -192,11 +213,21 @@ impl ApiService {
             }
         }
 
-        json_ok(ReadResponse {
+        let read_response = ReadResponse {
             session_id: self.serve_session.session_id(),
             message_cursor,
             instances,
-        })
+        };
+
+        // let serialized = rmp_serde::to_vec_named(&read_response).unwrap();
+
+        // Response::builder()
+        //     .status(StatusCode::OK)
+        //     .header(CONTENT_TYPE, "application/msgpack")
+        //     .body(Body::from(serialized))
+        //     .unwrap()
+
+        json_ok(read_response)
     }
 
     /// Open a script with the given ID in the user's default text editor.

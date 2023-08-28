@@ -127,6 +127,7 @@ local function decodeBase64(str)
 
 		out[nOut + 1] = char(b1)
 	elseif nAcc == 1 then
+		print(str)
 		error("Base64 has invalid length")
 	end
 

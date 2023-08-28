@@ -19,6 +19,9 @@
 			},
 			"RbxDom": {
 				"$path": "rbx_dom_lua"
+			},
+			"msgpack": {
+				"$path": "msgpack.lua"
 			}
 		}
 	}
